@@ -7,8 +7,6 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import {ReservoirOracle} from "../ReservoirOracle.sol";
 
-import "hardhat/console.sol";
-
 contract RelativeFloorBids is ReservoirOracle {
     // --- Structs ---
 
@@ -62,7 +60,7 @@ contract RelativeFloorBids is ReservoirOracle {
         Order storage order = orders[orderId];
 
         // Validate the message
-        uint256 maxMessageAge = 1 minutes;
+        uint256 maxMessageAge = 5 minutes;
         if (!_verifyMessage(order.id, maxMessageAge, message)) {
             revert InvalidMessage();
         }

@@ -42,8 +42,11 @@ abstract contract ReservoirOracle {
             return false;
         }
 
-        // Ensure the message is not expired
-        if (message.timestamp + validFor < block.timestamp) {
+        // Ensure the message timestamp is valid
+        if (
+            message.timestamp > block.timestamp ||
+            message.timestamp + validFor < block.timestamp
+        ) {
             return false;
         }
 

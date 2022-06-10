@@ -3,10 +3,11 @@ const axios = require("axios");
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
 
-describe("PriceDataRecorder", () => {
+// Should be tested against a mainnet fork
+describe("ChainlinkOracleAdaptor", () => {
   let deployer;
 
-  let priceDataRecorder;
+  let chainlinkOracleAdaptor;
 
   // --- Constants ---
 
@@ -27,17 +28,17 @@ describe("PriceDataRecorder", () => {
   beforeEach(async () => {
     [deployer] = await ethers.getSigners();
 
-    priceDataRecorder = await ethers
-      .getContractFactory("PriceDataRecorder", deployer)
-      .then((factory) => factory.deploy());
+    chainlinkOracleAdaptor = await ethers
+      .getContractFactory("ChainlinkOracleAdaptor", deployer)
+      .then((factory) => factory.deploy(BORED_APE_YACHT_CLUB));
   });
 
   const getMessage = async (collection) => {
     const baseUrl = "https://api.reservoir.tools/oracle/collections";
 
-    const name = "PriceDataRecorder";
+    const name = "ChainlinkOracleAdaptor";
     const version = "1";
-    const contract = priceDataRecorder.address;
+    const contract = chainlinkOracleAdaptor.address;
 
     return axios
       .get(
@@ -50,19 +51,14 @@ describe("PriceDataRecorder", () => {
 
   it("Record price when given valid oracle message", async () => {
     const message = await getMessage(BORED_APE_YACHT_CLUB);
-    await priceDataRecorder
-      .connect(deployer)
-      .recordPrice(BORED_APE_YACHT_CLUB, message);
+    await chainlinkOracleAdaptor.connect(deployer).recordPrice(message);
 
-    const priceData = await priceDataRecorder.priceData(
-      BORED_APE_YACHT_CLUB,
-      0
-    );
+    const result = await chainlinkOracleAdaptor.getRoundData(0);
 
-    expect(priceData.price).to.eq(
+    expect(result.answer).to.eq(
       defaultAbiCoder.decode(["uint256"], message.payload)[0]
     );
-    expect(priceData.timestamp).to.eq(
+    expect(result.startedAt).to.eq(
       (await ethers.provider.getBlock("latest")).timestamp
     );
   });
@@ -72,18 +68,15 @@ describe("PriceDataRecorder", () => {
     message.signature = message.signature.slice(0, -2) + "00";
 
     await expect(
-      priceDataRecorder
-        .connect(deployer)
-        .recordPrice(BORED_APE_YACHT_CLUB, message)
+      chainlinkOracleAdaptor.connect(deployer).recordPrice(message)
     ).to.be.revertedWith("reverted with custom error 'InvalidMessage()'");
   });
 
   it("Cannot record price from non-matching collection", async () => {
-    const message = await getMessage(BORED_APE_YACHT_CLUB);
-    message.signature = message.signature.slice(0, -2) + "00";
+    const message = await getMessage(COOL_CATS);
 
     await expect(
-      priceDataRecorder.connect(deployer).recordPrice(COOL_CATS, message)
+      chainlinkOracleAdaptor.connect(deployer).recordPrice(message)
     ).to.be.revertedWith("reverted with custom error 'InvalidMessage()'");
   });
 });

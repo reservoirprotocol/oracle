@@ -1,6 +1,6 @@
 const axios = require("axios");
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, network } = require("hardhat");
 
 describe("RelativeFloorBids", () => {
   let deployer;
@@ -16,6 +16,15 @@ describe("RelativeFloorBids", () => {
   const WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
   // --- Setup ---
+
+  before(async () => {
+    try {
+      await network.provider.send("evm_setNextBlockTimestamp", [
+        Math.floor(Date.now() / 1000) + 10,
+      ]);
+      await network.provider.send("evm_mine");
+    } catch {}
+  });
 
   beforeEach(async () => {
     [deployer, maker, taker] = await ethers.getSigners();
@@ -50,21 +59,6 @@ describe("RelativeFloorBids", () => {
       .createBid(message.id, 8000, BORED_APE_YACHT_CLUB, WETH);
 
     await relativeFloorBids.connect(taker).fillBid(0, message, 0);
-  });
-
-  it("Cannot fill bid when given an expired message", async () => {
-    const message = await getMessage(BORED_APE_YACHT_CLUB);
-
-    // Create bid at 80% of the floor price
-    await relativeFloorBids
-      .connect(maker)
-      .createBid(message.id, 8000, BORED_APE_YACHT_CLUB, WETH);
-
-    await network.provider.send("evm_increaseTime", [2 * 60]);
-
-    await expect(
-      relativeFloorBids.connect(taker).fillBid(0, message, 0)
-    ).to.be.revertedWith("reverted with custom error 'InvalidMessage()'");
   });
 
   it("Cannot fill bid when given an invalid signature", async () => {
