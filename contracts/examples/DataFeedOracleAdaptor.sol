@@ -7,7 +7,7 @@ import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/I
 import {AggregatorV3Interface} from "../interfaces/AggregatorV3Interface.sol";
 import {ReservoirOracle} from "../ReservoirOracle.sol";
 
-contract ChainlinkOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
+contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
     // --- Structs ---
 
     struct OracleResult {
@@ -137,7 +137,7 @@ contract ChainlinkOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
                 keccak256(
                     "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                 ),
-                keccak256("ChainlinkOracleAdaptor"),
+                keccak256("DataFeedOracleAdaptor"),
                 keccak256("1"),
                 block.chainid,
                 address(this)

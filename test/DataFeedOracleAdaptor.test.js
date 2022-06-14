@@ -4,10 +4,10 @@ const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
 
 // Should be tested against a mainnet fork
-describe("ChainlinkOracleAdaptor", () => {
+describe("DataFeedOracleAdaptor", () => {
   let deployer;
 
-  let chainlinkOracleAdaptor;
+  let dataFeedOracleAdaptor;
 
   // --- Constants ---
 
@@ -28,17 +28,17 @@ describe("ChainlinkOracleAdaptor", () => {
   beforeEach(async () => {
     [deployer] = await ethers.getSigners();
 
-    chainlinkOracleAdaptor = await ethers
-      .getContractFactory("ChainlinkOracleAdaptor", deployer)
+    dataFeedOracleAdaptor = await ethers
+      .getContractFactory("DataFeedOracleAdaptor", deployer)
       .then((factory) => factory.deploy(BORED_APE_YACHT_CLUB));
   });
 
   const getMessage = async (collection) => {
     const baseUrl = "https://api.reservoir.tools/oracle/collections";
 
-    const name = "ChainlinkOracleAdaptor";
+    const name = "DataFeedOracleAdaptor";
     const version = "1";
-    const contract = chainlinkOracleAdaptor.address;
+    const contract = dataFeedOracleAdaptor.address;
 
     return axios
       .get(
@@ -51,9 +51,9 @@ describe("ChainlinkOracleAdaptor", () => {
 
   it("Record price when given valid oracle message", async () => {
     const message = await getMessage(BORED_APE_YACHT_CLUB);
-    await chainlinkOracleAdaptor.connect(deployer).recordPrice(message);
+    await dataFeedOracleAdaptor.connect(deployer).recordPrice(message);
 
-    const result = await chainlinkOracleAdaptor.getRoundData(0);
+    const result = await dataFeedOracleAdaptor.getRoundData(0);
 
     expect(result.answer).to.eq(
       defaultAbiCoder.decode(["uint256"], message.payload)[0]
@@ -68,7 +68,7 @@ describe("ChainlinkOracleAdaptor", () => {
     message.signature = message.signature.slice(0, -2) + "00";
 
     await expect(
-      chainlinkOracleAdaptor.connect(deployer).recordPrice(message)
+      dataFeedOracleAdaptor.connect(deployer).recordPrice(message)
     ).to.be.revertedWith("reverted with custom error 'InvalidMessage()'");
   });
 
@@ -76,7 +76,7 @@ describe("ChainlinkOracleAdaptor", () => {
     const message = await getMessage(COOL_CATS);
 
     await expect(
-      chainlinkOracleAdaptor.connect(deployer).recordPrice(message)
+      dataFeedOracleAdaptor.connect(deployer).recordPrice(message)
     ).to.be.revertedWith("reverted with custom error 'InvalidMessage()'");
   });
 });
