@@ -2,9 +2,11 @@
 
 pragma solidity ^0.8.13;
 
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+
 import {ReservoirOracle} from "../ReservoirOracle.sol";
 
-contract PriceDataRecorder is ReservoirOracle {
+contract PriceDataRecorderEIP3668 is ReservoirOracle {
     // --- Enums ---
 
     enum PriceKind {
@@ -20,6 +22,16 @@ contract PriceDataRecorder is ReservoirOracle {
         uint256 timestamp;
         uint256 price;
     }
+
+    // --- Errors ---
+
+    error OffchainLookup(
+        address sender,
+        string[] urls,
+        bytes callData,
+        bytes4 callbackFunction,
+        bytes extraData
+    );
 
     // --- Fields ---
 
@@ -37,9 +49,30 @@ contract PriceDataRecorder is ReservoirOracle {
 
     // --- Public methods ---
 
-    function recordPrice(address collection, Message calldata message)
-        external
-    {
+    function recordPrice(address collection) external {
+        string[] memory urls = new string[](1);
+        urls[0] = string.concat(
+            "http://localhost:3000/oracle/collections/",
+            Strings.toHexString(uint160(collection), 20),
+            "/floor-ask/v1?eip3668Calldata={data}"
+        );
+
+        revert OffchainLookup(
+            address(this),
+            urls,
+            abi.encode(currency, "twap"),
+            PriceDataRecorderEIP3668.recordPriceCallback.selector,
+            abi.encode(collection)
+        );
+    }
+
+    function recordPriceCallback(
+        bytes calldata response,
+        bytes calldata extraData
+    ) external {
+        address collection = abi.decode(extraData, (address));
+        Message memory message = abi.decode(response, (Message));
+
         // Construct the message id on-chain (using EIP-712 structured-data hashing)
         bytes32 id = keccak256(
             abi.encode(

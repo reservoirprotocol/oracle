@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.13;
 
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 import {AggregatorV3Interface} from "../interfaces/AggregatorV3Interface.sol";
@@ -24,28 +25,35 @@ contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
 
     // --- Fields ---
 
+    address public currency;
     bytes32 public messageId;
     OracleResult[] public oracleResults;
 
     // --- Constructor ---
 
-    constructor(address collection)
+    constructor(address collectionAddress, address currencyAddress)
         // Initialize with Reservoir's main oracle
         ReservoirOracle(0x32dA57E736E05f75aa4FaE2E9Be60FD904492726)
     {
+        currency = currencyAddress;
+
+        // Construct the message id corresponding to the collection (using EIP-712 structured-data hashing)
         messageId = keccak256(
             abi.encode(
                 keccak256(
                     "ContractWideCollectionPrice(uint8 kind,address contract)"
                 ),
                 1, // PriceKind.TWAP
-                collection
+                collectionAddress
             )
         );
 
         description = string.concat(
-            IERC721Metadata(collection).symbol(),
-            " / ETH"
+            IERC721Metadata(collectionAddress).symbol(),
+            " / ",
+            currencyAddress == address(0)
+                ? "ETH"
+                : IERC20Metadata(currencyAddress).symbol()
         );
     }
 
@@ -58,9 +66,15 @@ contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
             revert InvalidMessage();
         }
 
+        (address messageCurrency, uint256 price) = abi.decode(
+            message.payload,
+            (address, uint256)
+        );
+        require(currency == messageCurrency, "Wrong currency");
+
         OracleResult memory oracleResult;
         oracleResult.roundId = uint80(oracleResults.length);
-        oracleResult.answer = int256(abi.decode(message.payload, (uint256)));
+        oracleResult.answer = int256(price);
         oracleResult.startedAt = block.timestamp;
         oracleResult.updatedAt = block.timestamp;
         oracleResult.answeredInRound = uint80(oracleResults.length);
@@ -123,25 +137,6 @@ contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
             oracleResult.startedAt,
             oracleResult.updatedAt,
             oracleResult.answeredInRound
-        );
-    }
-
-    function _getDomainSeparator()
-        internal
-        view
-        override
-        returns (bytes32 domainSeparator)
-    {
-        domainSeparator = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256("DataFeedOracleAdaptor"),
-                keccak256("1"),
-                block.chainid,
-                address(this)
-            )
         );
     }
 }

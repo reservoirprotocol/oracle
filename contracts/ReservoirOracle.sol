@@ -21,13 +21,11 @@ abstract contract ReservoirOracle {
     // --- Fields ---
 
     address immutable RESERVOIR_ORACLE_ADDRESS;
-    bytes32 immutable DOMAIN_SEPARATOR;
 
     // --- Constructor ---
 
     constructor(address reservoirOracleAddress) {
         RESERVOIR_ORACLE_ADDRESS = reservoirOracleAddress;
-        DOMAIN_SEPARATOR = _getDomainSeparator();
     }
 
     // --- Internal methods ---
@@ -82,8 +80,8 @@ abstract contract ReservoirOracle {
         address signerAddress = ecrecover(
             keccak256(
                 abi.encodePacked(
-                    "\x19\x01",
-                    DOMAIN_SEPARATOR,
+                    "\x19Ethereum Signed Message:\n32",
+                    // EIP-712 structured-data hash
                     keccak256(
                         abi.encode(
                             keccak256(
@@ -103,26 +101,5 @@ abstract contract ReservoirOracle {
 
         // Ensure the signer matches the designated oracle address
         return signerAddress == RESERVOIR_ORACLE_ADDRESS;
-    }
-
-    // --- EIP-712 helpers ---
-
-    function _getDomainSeparator()
-        internal
-        view
-        virtual
-        returns (bytes32 domainSeparator)
-    {
-        domainSeparator = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256("ReservoirOracle"),
-                keccak256("1"),
-                block.chainid,
-                address(this)
-            )
-        );
     }
 }

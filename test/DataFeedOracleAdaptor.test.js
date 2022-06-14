@@ -1,7 +1,10 @@
 const { defaultAbiCoder } = require("@ethersproject/abi");
+const { Common } = require("@reservoir0x/sdk");
 const axios = require("axios");
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
+
+const { BASE_RESERVOIR_API_URL } = require("../constants");
 
 // Should be tested against a mainnet fork
 describe("DataFeedOracleAdaptor", () => {
@@ -30,19 +33,17 @@ describe("DataFeedOracleAdaptor", () => {
 
     dataFeedOracleAdaptor = await ethers
       .getContractFactory("DataFeedOracleAdaptor", deployer)
-      .then((factory) => factory.deploy(BORED_APE_YACHT_CLUB));
+      .then((factory) =>
+        factory.deploy(BORED_APE_YACHT_CLUB, Common.Addresses.Eth[1])
+      );
   });
 
-  const getMessage = async (collection) => {
-    const baseUrl = "https://api.reservoir.tools/oracle/collections";
-
-    const name = "DataFeedOracleAdaptor";
-    const version = "1";
-    const contract = dataFeedOracleAdaptor.address;
+  const getMessage = async (collection, currency) => {
+    const baseUrl = `${BASE_RESERVOIR_API_URL}/oracle/collections`;
 
     return axios
       .get(
-        `${baseUrl}/${collection}/floor-ask/v1?contractName=${name}&contractVersion=${version}&verifyingContract=${contract}&kind=twap`
+        `${baseUrl}/${collection}/floor-ask/v1?kind=twap&currency=${currency}`
       )
       .then((response) => response.data.message);
   };
@@ -50,13 +51,16 @@ describe("DataFeedOracleAdaptor", () => {
   // --- Tests ---
 
   it("Record price when given valid oracle message", async () => {
-    const message = await getMessage(BORED_APE_YACHT_CLUB);
+    const message = await getMessage(
+      BORED_APE_YACHT_CLUB,
+      Common.Addresses.Eth[1]
+    );
     await dataFeedOracleAdaptor.connect(deployer).recordPrice(message);
 
     const result = await dataFeedOracleAdaptor.getRoundData(0);
 
     expect(result.answer).to.eq(
-      defaultAbiCoder.decode(["uint256"], message.payload)[0]
+      defaultAbiCoder.decode(["address", "uint256"], message.payload)[1]
     );
     expect(result.startedAt).to.eq(
       (await ethers.provider.getBlock("latest")).timestamp
@@ -64,7 +68,10 @@ describe("DataFeedOracleAdaptor", () => {
   });
 
   it("Cannot record price from invalid signature", async () => {
-    const message = await getMessage(BORED_APE_YACHT_CLUB);
+    const message = await getMessage(
+      BORED_APE_YACHT_CLUB,
+      Common.Addresses.Eth[1]
+    );
     message.signature = message.signature.slice(0, -2) + "00";
 
     await expect(
@@ -73,7 +80,7 @@ describe("DataFeedOracleAdaptor", () => {
   });
 
   it("Cannot record price from non-matching collection", async () => {
-    const message = await getMessage(COOL_CATS);
+    const message = await getMessage(COOL_CATS, Common.Addresses.Eth[1]);
 
     await expect(
       dataFeedOracleAdaptor.connect(deployer).recordPrice(message)

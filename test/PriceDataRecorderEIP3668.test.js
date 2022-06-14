@@ -1,3 +1,4 @@
+const { defaultAbiCoder } = require("@ethersproject/abi");
 const { Common } = require("@reservoir0x/sdk");
 const axios = require("axios");
 const { expect } = require("chai");
@@ -5,12 +6,10 @@ const { ethers, network } = require("hardhat");
 
 const { BASE_RESERVOIR_API_URL } = require("../constants");
 
-describe("RelativeFloorBids", () => {
+describe("PriceDataRecorderEIP3668", () => {
   let deployer;
-  let maker;
-  let taker;
 
-  let relativeFloorBids;
+  let priceDataRecorder;
 
   // --- Constants ---
 
@@ -29,11 +28,11 @@ describe("RelativeFloorBids", () => {
   });
 
   beforeEach(async () => {
-    [deployer, maker, taker] = await ethers.getSigners();
+    [deployer] = await ethers.getSigners();
 
-    relativeFloorBids = await ethers
-      .getContractFactory("RelativeFloorBids", deployer)
-      .then((factory) => factory.deploy());
+    priceDataRecorder = await ethers
+      .getContractFactory("PriceDataRecorderEIP3668", deployer)
+      .then((factory) => factory.deploy(Common.Addresses.Usdc[1]));
   });
 
   const getMessage = async (collection, currency) => {
@@ -48,68 +47,49 @@ describe("RelativeFloorBids", () => {
 
   // --- Tests ---
 
-  it("Fill bid", async () => {
-    const message = await getMessage(
+  it("Record price when given valid oracle message", async () => {
+    await priceDataRecorder
+      .connect(deployer)
+      .recordPrice(BORED_APE_YACHT_CLUB, { ccipReadEnabled: true });
+
+    const priceData = await priceDataRecorder.priceData(
       BORED_APE_YACHT_CLUB,
-      Common.Addresses.Weth[1]
+      0
     );
 
-    // Create bid at 80% of the floor price
-    await relativeFloorBids
-      .connect(maker)
-      .createBid(
-        message.id,
-        8000,
-        BORED_APE_YACHT_CLUB,
-        Common.Addresses.Weth[1]
-      );
-
-    await relativeFloorBids.connect(taker).fillBid(0, message, 0);
+    expect(priceData.price).to.eq(
+      defaultAbiCoder.decode(["address", "uint256"], message.payload)[1]
+    );
+    expect(priceData.timestamp).to.eq(
+      (await ethers.provider.getBlock("latest")).timestamp
+    );
   });
 
-  it("Cannot fill bid when given an invalid signature", async () => {
+  it("Cannot record price from invalid signature", async () => {
     const message = await getMessage(
       BORED_APE_YACHT_CLUB,
-      Common.Addresses.Weth[1]
+      Common.Addresses.Usdc[1]
     );
-
-    // Create bid at 80% of the floor price
-    await relativeFloorBids
-      .connect(maker)
-      .createBid(
-        message.id,
-        8000,
-        BORED_APE_YACHT_CLUB,
-        Common.Addresses.Weth[1]
-      );
-
     message.signature = message.signature.slice(0, -2) + "00";
 
     await expect(
-      relativeFloorBids.connect(taker).fillBid(0, message, 0)
+      priceDataRecorder
+        .connect(deployer)
+        .recordPrice(BORED_APE_YACHT_CLUB, { ccipReadEnabled: true })
     ).to.be.revertedWith("reverted with custom error 'InvalidMessage()'");
   });
 
   it("Cannot record price from non-matching collection", async () => {
-    let message = await getMessage(
+    const message = await getMessage(
       BORED_APE_YACHT_CLUB,
-      Common.Addresses.Weth[1]
+      Common.Addresses.Usdc[1]
     );
-
-    // Create bid at 80% of the floor price
-    await relativeFloorBids
-      .connect(maker)
-      .createBid(
-        message.id,
-        8000,
-        BORED_APE_YACHT_CLUB,
-        Common.Addresses.Weth[1]
-      );
-
-    message = await getMessage(COOL_CATS, Common.Addresses.Weth[1]);
+    message.signature = message.signature.slice(0, -2) + "00";
 
     await expect(
-      relativeFloorBids.connect(taker).fillBid(0, message, 0)
+      priceDataRecorder
+        .connect(deployer)
+        .recordPrice(COOL_CATS, { ccipReadEnabled: true })
     ).to.be.revertedWith("reverted with custom error 'InvalidMessage()'");
   });
 });

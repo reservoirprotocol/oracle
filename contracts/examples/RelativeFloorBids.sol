@@ -65,9 +65,14 @@ contract RelativeFloorBids is ReservoirOracle {
             revert InvalidMessage();
         }
 
+        (
+            address messageCurrency, /* uint256 messagePrice */
+
+        ) = abi.decode(message.payload, (address, uint256));
+        require(order.erc20Token == messageCurrency, "Wrong currency");
+
         // For simplicity, no transfers are actually performed in this example
 
-        // uint256 messagePrice = abi.decode(message.payload, (uint256));
         // uint256 price = (messagePrice * order.bps) / 10000;
 
         // IERC20(order.erc20Token).transferFrom(order.maker, msg.sender, price);
@@ -76,26 +81,5 @@ contract RelativeFloorBids is ReservoirOracle {
         //     order.maker,
         //     tokenId
         // );
-    }
-
-    // --- Overrides ---
-
-    function _getDomainSeparator()
-        internal
-        view
-        override
-        returns (bytes32 domainSeparator)
-    {
-        domainSeparator = keccak256(
-            abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
-                keccak256("RelativeFloorBids"),
-                keccak256("1"),
-                block.chainid,
-                address(this)
-            )
-        );
     }
 }

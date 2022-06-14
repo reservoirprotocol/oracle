@@ -1,7 +1,10 @@
 const { defaultAbiCoder } = require("@ethersproject/abi");
+const { Common } = require("@reservoir0x/sdk");
 const axios = require("axios");
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
+
+const { BASE_RESERVOIR_API_URL } = require("../constants");
 
 describe("PriceDataRecorder", () => {
   let deployer;
@@ -29,19 +32,15 @@ describe("PriceDataRecorder", () => {
 
     priceDataRecorder = await ethers
       .getContractFactory("PriceDataRecorder", deployer)
-      .then((factory) => factory.deploy());
+      .then((factory) => factory.deploy(Common.Addresses.Usdc[1]));
   });
 
-  const getMessage = async (collection) => {
-    const baseUrl = "https://api.reservoir.tools/oracle/collections";
-
-    const name = "PriceDataRecorder";
-    const version = "1";
-    const contract = priceDataRecorder.address;
+  const getMessage = async (collection, currency) => {
+    const baseUrl = `${BASE_RESERVOIR_API_URL}/oracle/collections`;
 
     return axios
       .get(
-        `${baseUrl}/${collection}/floor-ask/v1?contractName=${name}&contractVersion=${version}&verifyingContract=${contract}&kind=twap`
+        `${baseUrl}/${collection}/floor-ask/v1?kind=twap&currency=${currency}`
       )
       .then((response) => response.data.message);
   };
@@ -49,7 +48,10 @@ describe("PriceDataRecorder", () => {
   // --- Tests ---
 
   it("Record price when given valid oracle message", async () => {
-    const message = await getMessage(BORED_APE_YACHT_CLUB);
+    const message = await getMessage(
+      BORED_APE_YACHT_CLUB,
+      Common.Addresses.Usdc[1]
+    );
     await priceDataRecorder
       .connect(deployer)
       .recordPrice(BORED_APE_YACHT_CLUB, message);
@@ -60,7 +62,7 @@ describe("PriceDataRecorder", () => {
     );
 
     expect(priceData.price).to.eq(
-      defaultAbiCoder.decode(["uint256"], message.payload)[0]
+      defaultAbiCoder.decode(["address", "uint256"], message.payload)[1]
     );
     expect(priceData.timestamp).to.eq(
       (await ethers.provider.getBlock("latest")).timestamp
@@ -68,7 +70,10 @@ describe("PriceDataRecorder", () => {
   });
 
   it("Cannot record price from invalid signature", async () => {
-    const message = await getMessage(BORED_APE_YACHT_CLUB);
+    const message = await getMessage(
+      BORED_APE_YACHT_CLUB,
+      Common.Addresses.Usdc[1]
+    );
     message.signature = message.signature.slice(0, -2) + "00";
 
     await expect(
@@ -79,7 +84,10 @@ describe("PriceDataRecorder", () => {
   });
 
   it("Cannot record price from non-matching collection", async () => {
-    const message = await getMessage(BORED_APE_YACHT_CLUB);
+    const message = await getMessage(
+      BORED_APE_YACHT_CLUB,
+      Common.Addresses.Usdc[1]
+    );
     message.signature = message.signature.slice(0, -2) + "00";
 
     await expect(
