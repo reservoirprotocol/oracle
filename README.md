@@ -11,3 +11,10 @@ At the moment, the following message types are available via the hosted Reservoi
 ### Usage and examples
 
 Examples for integrating the Reservoir-powered oracle are available in the [examples](./contracts/examples) and [test](./test) directories.
+
+### Deployed contracts
+
+Kovan:
+
+- `BAYC / USDC` `DataFeedOracleAdaptor`: https://kovan.etherscan.io/address/0xC5B29989e47bb0a17B0870b027BE26522d654BF5#readContract
+- `CHIMP / USDC` `DataFeedOracleAdaptor`: https://kovan.etherscan.io/address/0x8fF91c16a42c45D20F4A0806afb5ab9C9112f472#readContract

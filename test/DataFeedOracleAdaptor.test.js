@@ -34,7 +34,11 @@ describe("DataFeedOracleAdaptor", () => {
     dataFeedOracleAdaptor = await ethers
       .getContractFactory("DataFeedOracleAdaptor", deployer)
       .then((factory) =>
-        factory.deploy(BORED_APE_YACHT_CLUB, Common.Addresses.Eth[1])
+        factory.deploy(
+          BORED_APE_YACHT_CLUB,
+          Common.Addresses.Eth[1],
+          "BAYC / ETH"
+        )
       );
   });
 

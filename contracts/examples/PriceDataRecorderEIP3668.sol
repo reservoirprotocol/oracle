@@ -49,10 +49,10 @@ contract PriceDataRecorderEIP3668 is ReservoirOracle {
 
     // --- Public methods ---
 
-    function recordPrice(address collection) external {
+    function recordPrice(address collection) external view {
         string[] memory urls = new string[](1);
         urls[0] = string.concat(
-            "http://localhost:3000/oracle/collections/",
+            "https://api.reservoir.tools/oracle/collections/",
             Strings.toHexString(uint160(collection), 20),
             "/floor-ask/v1?eip3668Calldata={data}"
         );

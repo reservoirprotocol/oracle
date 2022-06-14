@@ -3,7 +3,6 @@
 pragma solidity ^0.8.13;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 
 import {AggregatorV3Interface} from "../interfaces/AggregatorV3Interface.sol";
 import {ReservoirOracle} from "../ReservoirOracle.sol";
@@ -31,7 +30,11 @@ contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
 
     // --- Constructor ---
 
-    constructor(address collectionAddress, address currencyAddress)
+    constructor(
+        address collectionAddress,
+        address currencyAddress,
+        string memory feedDescription
+    )
         // Initialize with Reservoir's main oracle
         ReservoirOracle(0x32dA57E736E05f75aa4FaE2E9Be60FD904492726)
     {
@@ -48,13 +51,11 @@ contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
             )
         );
 
-        description = string.concat(
-            IERC721Metadata(collectionAddress).symbol(),
-            " / ",
-            currencyAddress == address(0)
-                ? "ETH"
-                : IERC20Metadata(currencyAddress).symbol()
-        );
+        decimals = currencyAddress == address(0)
+            ? 18
+            : IERC20Metadata(currencyAddress).decimals();
+
+        description = feedDescription;
     }
 
     // --- Public methods ---
@@ -85,7 +86,7 @@ contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
     // --- Overrides ---
 
     uint256 public override version = 3;
-    uint8 public override decimals = 18;
+    uint8 public override decimals;
     string public override description;
 
     function getRoundData(uint80 _roundId)
