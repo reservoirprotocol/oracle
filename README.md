@@ -6,7 +6,7 @@ This repo provides a template together with some examples for using the Reservoi
 
 At the moment, the following message types are available via the hosted Reservoir API:
 
-- [collection floor price](https://api.reservoir.tools/#/oracle/getOracleCollectionsCollectionFlooraskV1) (spot, 24 hour twap, lower (`min(spot, 25 hour twap)`) and upper (`max(spot, 24 hours twap)`))
+- [collection floor price](https://api.reservoir.tools/#/oracle/getOracleCollectionsCollectionFlooraskV1) (spot, 24 hour twap, lower (`min(spot, 2 hour twap)`) and upper (`max(spot, 24 hours twap)`))
 
 ### Usage and examples
 
