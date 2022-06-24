@@ -1,20 +1,61 @@
-# Reservoir Oracle
+The Reservoir Oracle enables access to Reservoir’s comprehensive aggregated NFT prices in on-chain applications and protocols. 
 
-This repo provides a template together with some examples for using the Reservoir-powered NFT oracle. Inspired by [Trustus](https://github.com/ZeframLou/trustus), the way the oracle works is by signing messages off-chain, which can then be relayed and verifier on-chain.
+## Available Data
 
-### Message types
+In the current Alpha release, you can get the collection floor price for any NFT contract on Ethereum, with the following options:
 
-At the moment, the following message types are available via the hosted Reservoir API:
+**Methodology**: Spot, 24hr TWAP, Upper (`max(Spot,TWAP)`) or Lower (`min(Spot,TWAP)`)  
+**Currency**: ETH, WETH or USDC
 
-- [collection floor price](https://api.reservoir.tools/#/oracle/getOracleCollectionsCollectionFlooraskV1) (spot, 24 hour twap, lower (`min(spot, 2 hour twap)`) and upper (`max(spot, 24 hours twap)`))
+## Modes
 
-### Usage and examples
+The Oracle supports two modes, depending on the type of data that you need:
 
-Examples for integrating the Reservoir-powered oracle are available in the [examples](./contracts/examples) and [test](./test) directories.
+**On-Demand** > Bring floor prices for ANY collection on-chain when users take actions  
+**Feeds** > Access regularly published floor data for the most popular NFT collections
 
-### Deployed contracts
+Each mode has a different usage flow, which are outlined below:
 
-Kovan:
+## On-Demand
 
-- `BAYC / USDC` `DataFeedOracleAdaptor`: https://kovan.etherscan.io/address/0xC5B29989e47bb0a17B0870b027BE26522d654BF5#readContract
-- `CHIMP / USDC` `DataFeedOracleAdaptor`: https://kovan.etherscan.io/address/0x8fF91c16a42c45D20F4A0806afb5ab9C9112f472#readContract
+In most-cases, we recommend using On-Demand oracle updates. These have the following advantages:
+
+- Flexibility to support any NFT collection, pricing methodology or currency
+- Get fresh updates whenever users take actions
+
+On-demand updates effectively “piggyback” user transactions, with the following flow:
+
+- User takes an action in a Dapp
+- Dapp requests a price update from the [Oracle API](https://docs.reservoir.tools/reference/getoraclecollectionscollectionflooraskv1) in the background
+- Dapp builds the users’ transaction, including the signed Oracle update
+- User signs and submits the transaction
+- Contract validates the Oracle update, and processes user transaction
+
+The [signed message format](https://github.com/reservoirprotocol/oracle/blob/main/contracts/ReservoirOracle.sol) is based on [TrustUs](https://github.com/ZeframLou/trustus), with some minor modifications.
+
+## Feeds
+
+For popular NFT projects, we publish hourly price data that your contract can connect to. These feeds use the exact same format as [Chainlink Data Feeds](https://docs.chain.link/docs/get-the-latest-price/), to maximize compatibility with existing Oracle tooling. 
+
+We currently publish the following feeds, on Kovan:
+
+- [Bored Ape Yacht Club](https://kovan.etherscan.io/address/0xC5B29989e47bb0a17B0870b027BE26522d654BF5#readContract), 24hr TWAP, USDC 
+- [Chimpers](https://kovan.etherscan.io/address/0x8fF91c16a42c45D20F4A0806afb5ab9C9112f472#readContract), 24hr TWAP, USDC
+
+To access the current price, use the `latestAnswer` value.
+
+## Examples
+
+The following examples are available:
+
+[RelativeFloorBids.sol](https://github.com/reservoirprotocol/oracle/blob/main/contracts/examples/RelativeFloorBids.sol)  
+Create collection-wide bids with dynamic pricing relative to the collection floor
+
+[PriceDataRecorder.sol](https://github.com/reservoirprotocol/oracle/blob/main/contracts/examples/PriceDataRecorder.sol)  
+Simple example that saves the results of on-demand oracle updates
+
+[PriceDataRecorderEIP3668.sol](https://github.com/reservoirprotocol/oracle/blob/main/contracts/examples/PriceDataRecorderEIP3668.sol)  
+Same as above, using the [EIP3668: Secure offchain data retrieval](https://eips.ethereum.org/EIPS/eip-3668) standard
+
+[DataFeedOracleAdaptor.sol](https://github.com/reservoirprotocol/oracle/blob/main/contracts/examples/DataFeedOracleAdaptor.sol)  
+Example Chainlink-compatible price feed
