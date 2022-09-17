@@ -44,9 +44,10 @@ contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
         messageId = keccak256(
             abi.encode(
                 keccak256(
-                    "ContractWideCollectionPrice(uint8 kind,address contract)"
+                    "ContractWideCollectionPrice(uint8 kind,uint256 twapHours,address contract)"
                 ),
                 1, // PriceKind.TWAP
+                24, // 24 hours TWAP
                 collectionAddress
             )
         );

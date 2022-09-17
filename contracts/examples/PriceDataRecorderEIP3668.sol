@@ -54,7 +54,7 @@ contract PriceDataRecorderEIP3668 is ReservoirOracle {
         urls[0] = string.concat(
             "https://api.reservoir.tools/oracle/collections/",
             Strings.toHexString(uint160(collection), 20),
-            "/floor-ask/v1?eip3668Calldata={data}"
+            "/floor-ask/v2?eip3668Calldata={data}"
         );
 
         revert OffchainLookup(
@@ -77,9 +77,10 @@ contract PriceDataRecorderEIP3668 is ReservoirOracle {
         bytes32 id = keccak256(
             abi.encode(
                 keccak256(
-                    "ContractWideCollectionPrice(uint8 kind,address contract)"
+                    "ContractWideCollectionPrice(uint8 kind,uint256 twapHours,address contract)"
                 ),
                 PriceKind.TWAP,
+                24,
                 collection
             )
         );

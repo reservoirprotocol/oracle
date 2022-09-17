@@ -40,7 +40,7 @@ describe("PriceDataRecorder", () => {
 
     return axios
       .get(
-        `${baseUrl}/${collection}/floor-ask/v1?kind=twap&currency=${currency}`
+        `${baseUrl}/${collection}/floor-ask/v2?kind=twap&currency=${currency}`
       )
       .then((response) => response.data.message);
   };
