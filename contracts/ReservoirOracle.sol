@@ -34,7 +34,7 @@ abstract contract ReservoirOracle {
         bytes32 id,
         uint256 validFor,
         Message memory message
-    ) internal virtual returns (bool success) {
+    ) internal view virtual returns (bool success) {
         // Ensure the message matches the requested id
         if (id != message.id) {
             return false;
