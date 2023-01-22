@@ -35,6 +35,13 @@ contract PriceDataRecorder is ReservoirOracle {
         currency = currencyAddress;
     }
 
+    // --- Overrides ---
+
+    function updateReservoirOracleAddress(address) public pure override {
+        // TODO: Should allow owner to update the oracle address
+        revert();
+    }
+
     // --- Public methods ---
 
     function recordPrice(address collection, Message calldata message)

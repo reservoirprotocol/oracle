@@ -59,6 +59,13 @@ contract DataFeedOracleAdaptor is AggregatorV3Interface, ReservoirOracle {
         description = feedDescription;
     }
 
+    // --- Overrides ---
+
+    function updateReservoirOracleAddress(address) public pure override {
+        // TODO: Should allow owner to update the oracle address
+        revert();
+    }
+
     // --- Public methods ---
 
     function recordPrice(Message calldata message) external {

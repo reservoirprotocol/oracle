@@ -47,6 +47,13 @@ contract PriceDataRecorderEIP3668 is ReservoirOracle {
         currency = currencyAddress;
     }
 
+    // --- Overrides ---
+
+    function updateReservoirOracleAddress(address) public pure override {
+        // TODO: Should allow owner to update the oracle address
+        revert();
+    }
+
     // --- Public methods ---
 
     function recordPrice(address collection) external view {

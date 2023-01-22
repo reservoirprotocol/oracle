@@ -34,6 +34,13 @@ contract RelativeFloorBids is ReservoirOracle {
         ReservoirOracle(0x32dA57E736E05f75aa4FaE2E9Be60FD904492726)
     {}
 
+    // --- Overrides ---
+
+    function updateReservoirOracleAddress(address) public pure override {
+        // TODO: Should allow owner to update the oracle address
+        revert();
+    }
+
     // --- Public methods ---
 
     function createBid(
@@ -56,7 +63,7 @@ contract RelativeFloorBids is ReservoirOracle {
         uint256 orderId,
         Message calldata message,
         uint256 // tokenId
-    ) external {
+    ) external view {
         Order storage order = orders[orderId];
 
         // Validate the message

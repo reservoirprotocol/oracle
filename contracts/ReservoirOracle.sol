@@ -20,13 +20,19 @@ abstract contract ReservoirOracle {
 
     // --- Fields ---
 
-    address immutable RESERVOIR_ORACLE_ADDRESS;
+    address public RESERVOIR_ORACLE_ADDRESS;
 
     // --- Constructor ---
 
     constructor(address reservoirOracleAddress) {
         RESERVOIR_ORACLE_ADDRESS = reservoirOracleAddress;
     }
+
+    // --- Public methods ---
+
+    function updateReservoirOracleAddress(address newReservoirOracleAddress)
+        public
+        virtual;
 
     // --- Internal methods ---
 
